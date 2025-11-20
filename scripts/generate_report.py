@@ -390,15 +390,15 @@ def create_interactive_html(data, config):
                 statsGrid.innerHTML = `
                     <div class="stat-card">
                         <div class="stat-label">Total Usage</div>
-                        <div class="stat-value">${{{{totalUsage.toLocaleString()}}}}</div>
+                        <div class="stat-value">${{totalUsage.toLocaleString()}}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Unique Orders</div>
-                        <div class="stat-value">${{{{totalOrders.toLocaleString()}}}}</div>
+                        <div class="stat-value">${{totalOrders.toLocaleString()}}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Active DEXes</div>
-                        <div class="stat-value">${{{{dexCount}}}}</div>
+                        <div class="stat-value">${{dexCount}}</div>
                     </div>
                 `;
             }} else {{
@@ -409,15 +409,15 @@ def create_interactive_html(data, config):
                 statsGrid.innerHTML = `
                     <div class="stat-card">
                         <div class="stat-label">Total Usage</div>
-                        <div class="stat-value">${{{totalUsage.toLocaleString()}}}</div>
+                        <div class="stat-value">${{totalUsage.toLocaleString()}}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Unique Orders</div>
-                        <div class="stat-value">${{{totalOrders.toLocaleString()}}}</div>
+                        <div class="stat-value">${{totalOrders.toLocaleString()}}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Active DEXes</div>
-                        <div class="stat-value">${{{dexCount}}}</div>
+                        <div class="stat-value">${{dexCount}}</div>
                     </div>
                 `;
             }}
@@ -476,7 +476,7 @@ def create_interactive_html(data, config):
                 const dexNames = [...new Set(data.map(d => d.dex_name))];
 
                 const traces = dexNames.map((dex, idx) => ({{
-                    x: hours.map(h => `${{{String(h).padStart(2, '0')}}}:00`),
+                    x: hours.map(h => `${{String(h).padStart(2, '0')}}:00`),
                     y: hours.map(h => byHour[h][dex] || 0),
                     name: dex,
                     type: 'bar',
