@@ -385,44 +385,32 @@ def log_etl_run(conn, chain_id, run_date, status, records_processed=0, error_mes
     logger.info(f"Logged ETL run: run_id={run_id}, status={status}")
 
 
-def main():
-    """Main ETL process"""
-    # Load configuration
-    config_path = Path(__file__).parent.parent / "config" / "config.yaml"
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
+def process_single_day(conn, chains, excluded_tokens, days_back, logger):
+    """
+    Process a single day's data for all chains
 
-    # Setup logging
-    logger = setup_logging(config)
-    logger.info("=" * 80)
-    logger.info("Starting Daily DEX ETL Process")
-    logger.info("=" * 80)
+    Args:
+        conn: DuckDB connection
+        chains: List of chain IDs
+        excluded_tokens: List of tokens to exclude
+        days_back: Number of days back from today
+        logger: Logger instance
 
-    # Get database path
-    db_path = Path(__file__).parent.parent / config['data']['database_path']
-
-    # Get date range (yesterday)
-    begin_time, end_time = get_date_range(days_back=1)
+    Returns:
+        Total records processed
+    """
+    begin_time, end_time = get_date_range(days_back=days_back)
     run_date = datetime.strptime(begin_time, "%Y-%m-%d %H:%M:%S").date()
 
-    logger.info(f"Processing date: {run_date}")
+    logger.info(f"\n{'=' * 60}")
+    logger.info(f"Processing date: {run_date} (days_back={days_back})")
     logger.info(f"Time range: {begin_time} to {end_time}")
+    logger.info(f"{'=' * 60}")
 
-    # Connect to database
-    logger.info(f"Connecting to database: {db_path}")
-    conn = duckdb.connect(str(db_path))
-
-    # Get excluded tokens
-    excluded_tokens = config['exclusions']['tokens']
-
-    # Process each chain
-    chains = config['chains']
     total_records = 0
 
     for chain_id in chains:
-        logger.info(f"\n{'=' * 60}")
-        logger.info(f"Processing chain: {chain_id}")
-        logger.info(f"{'=' * 60}")
+        logger.info(f"\n  Processing chain: {chain_id}")
 
         try:
             # Extract data
@@ -440,21 +428,111 @@ def main():
 
                 # Log success
                 log_etl_run(conn, chain_id, run_date, 'success', records)
-                logger.info(f"✅ Successfully processed {chain_id}: {records} records")
+                logger.info(f"  ✅ Successfully processed {chain_id}: {records} records")
             else:
-                logger.warning(f"⚠️ No data extracted for {chain_id}")
+                logger.warning(f"  ⚠️ No data extracted for {chain_id}")
                 log_etl_run(conn, chain_id, run_date, 'success', 0)
 
         except Exception as e:
-            logger.error(f"❌ Error processing {chain_id}: {e}", exc_info=True)
+            logger.error(f"  ❌ Error processing {chain_id}: {e}", exc_info=True)
             log_etl_run(conn, chain_id, run_date, 'failed', 0, str(e))
+
+    return total_records
+
+
+def main():
+    """Main ETL process"""
+    # Load configuration
+    config_path = Path(__file__).parent.parent / "config" / "config.yaml"
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+
+    # Setup logging
+    logger = setup_logging(config)
+
+    # Check if init mode is enabled
+    init_mode = config.get('init', {}).get('enabled', False)
+    init_days = config.get('init', {}).get('days', 7)
+    auto_generate_report = config.get('init', {}).get('auto_generate_report', True)
+
+    if init_mode:
+        logger.info("=" * 80)
+        logger.info("🚀 INITIALIZATION MODE - Processing Last {} Days".format(init_days))
+        logger.info("=" * 80)
+    else:
+        logger.info("=" * 80)
+        logger.info("Starting Daily DEX ETL Process")
+        logger.info("=" * 80)
+
+    # Get database path
+    db_path = Path(__file__).parent.parent / config['data']['database_path']
+
+    # Connect to database
+    logger.info(f"Connecting to database: {db_path}")
+    conn = duckdb.connect(str(db_path))
+
+    # Get excluded tokens and chains
+    excluded_tokens = config['exclusions']['tokens']
+    chains = config['chains']
+
+    total_records = 0
+
+    if init_mode:
+        # Process multiple days
+        logger.info(f"Processing {init_days} days of historical data...")
+
+        for days_back in range(init_days, 0, -1):
+            day_records = process_single_day(conn, chains, excluded_tokens, days_back, logger)
+            total_records += day_records
+
+        logger.info("\n" + "=" * 80)
+        logger.info(f"✅ Initialization Complete!")
+        logger.info(f"Total records processed: {total_records}")
+        logger.info(f"Days processed: {init_days}")
+        logger.info("=" * 80)
+
+        # Automatically generate report if enabled
+        if auto_generate_report:
+            logger.info("\n" + "=" * 80)
+            logger.info("📊 Generating HTML Report...")
+            logger.info("=" * 80)
+
+            try:
+                import subprocess
+                report_script = Path(__file__).parent / "generate_report.py"
+                result = subprocess.run(
+                    [sys.executable, str(report_script)],
+                    capture_output=True,
+                    text=True,
+                    timeout=300
+                )
+
+                if result.returncode == 0:
+                    logger.info("✅ Report generated successfully!")
+                    logger.info(result.stdout)
+                else:
+                    logger.error(f"❌ Report generation failed: {result.stderr}")
+
+            except Exception as e:
+                logger.error(f"❌ Error generating report: {e}")
+
+        # Disable init mode after successful run
+        logger.info("\n💡 Disabling init mode in config...")
+        config['init']['enabled'] = False
+        with open(config_path, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+        logger.info("✅ Init mode disabled. Future runs will process only yesterday's data.")
+
+    else:
+        # Normal mode: process yesterday only
+        total_records = process_single_day(conn, chains, excluded_tokens, 1, logger)
+
+        logger.info("\n" + "=" * 80)
+        logger.info(f"ETL Process Complete - Total records processed: {total_records}")
+        logger.info("=" * 80)
 
     # Close connection
     conn.close()
-
-    logger.info("\n" + "=" * 80)
-    logger.info(f"ETL Process Complete - Total records processed: {total_records}")
-    logger.info("=" * 80)
 
 
 if __name__ == "__main__":

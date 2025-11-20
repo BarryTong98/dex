@@ -21,6 +21,12 @@ time:
   daily_run_hour: 9
   daily_run_minute: 0
 
+# Initialization mode
+init:
+  enabled: false  # Set to true to run initial 7-day backfill
+  days: 7  # Number of days to backfill when init is enabled
+  auto_generate_report: true  # Automatically generate report after init
+
 # Report configuration
 report:
   title: "DEX Usage Analytics Dashboard"

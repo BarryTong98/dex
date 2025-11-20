@@ -60,6 +60,32 @@ dex/
 
 ## Usage
 
+### First-Time Setup: Initialize Historical Data
+
+**🆕 NEW: Initialization Mode** - Process multiple days of historical data at once:
+
+```bash
+# 1. Enable init mode in config/config.yaml
+vi config/config.yaml
+
+# Set:
+# init:
+#   enabled: true
+#   days: 7  # Process last 7 days
+#   auto_generate_report: true
+
+# 2. Run ETL (will process 7 days + auto-generate report)
+python3 scripts/daily_etl.py
+```
+
+**What happens:**
+- ✅ Processes last 7 days of data (configurable)
+- ✅ Automatically generates HTML report
+- ✅ Auto-disables init mode after completion
+- ⏱️ Takes ~10-20 minutes for 7 days
+
+See [docs/INIT_MODE.md](docs/INIT_MODE.md) for detailed guide.
+
 ### Manual Execution
 
 **Run ETL for yesterday's data**:
