@@ -1,0 +1,42 @@
+# DEX Analytics Configuration
+
+# Chains to process
+chains:
+  - bsc
+  - eth
+  - base
+  - sol
+
+# Data paths (on server: /server/share/barry/dex)
+data:
+  parquet_base_path: "/server/data/parquet"  # Source parquet files
+  database_path: "data/dex_analytics.duckdb"  # DuckDB database
+  reports_path: "reports"  # Generated HTML reports
+
+# Time configuration
+time:
+  # How many days of history to process on first run (0 = only yesterday)
+  initial_backfill_days: 0
+  # Run time in UTC (for crontab)
+  daily_run_hour: 9
+  daily_run_minute: 0
+
+# Report configuration
+report:
+  title: "DEX Usage Analytics Dashboard"
+  default_lookback_days: 30  # Default days shown in trend charts
+  enable_hourly_charts: true
+  enable_daily_charts: true
+  enable_total_charts: true
+
+# Logging
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  log_file: "logs/etl.log"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# Token exclusions (e.g., test tokens to exclude)
+exclusions:
+  tokens:
+    - "0xe6DF05CE8C8301223373CF5B969AFCb1498c5528"  # Example test token

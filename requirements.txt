@@ -1,0 +1,13 @@
+# DEX Analytics Requirements
+
+# Core dependencies
+duckdb>=0.10.0
+pandas>=2.0.0
+pyyaml>=6.0
+
+# Data visualization
+plotly>=5.18.0
+
+# Notebook support (optional, for development)
+jupyter>=1.0.0
+ipython>=8.12.0
