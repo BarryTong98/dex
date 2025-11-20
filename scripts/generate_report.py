@@ -353,33 +353,63 @@ def create_interactive_html(data, config):
             return totalData.filter(d => d.chain_id === chain);
         }}
 
-        function updateStats(chain) {{
-            const data = filterTotalData(chain);
+        function updateStats(chain, date) {{
+            let data;
             const statsGrid = document.getElementById('statsGrid');
 
-            if (data.length === 0) {{
-                statsGrid.innerHTML = '';
-                return;
+            if (date === 'all') {{
+                // Show total aggregated data
+                data = filterTotalData(chain);
+                if (data.length === 0) {{
+                    statsGrid.innerHTML = '';
+                    return;
+                }}
+
+                const totalUsage = data.reduce((sum, d) => sum + d.usage_count, 0);
+                const totalOrders = data.reduce((sum, d) => sum + d.unique_orders, 0);
+                const dexCount = data.length;
+
+                statsGrid.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-label">Total Usage</div>
+                        <div class="stat-value">${{totalUsage.toLocaleString()}}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Unique Orders</div>
+                        <div class="stat-value">${{totalOrders.toLocaleString()}}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Active DEXes</div>
+                        <div class="stat-value">${{dexCount}}</div>
+                    </div>
+                `;
+            }} else {{
+                // Show data for specific date
+                data = filterDailyData(chain, date);
+                if (data.length === 0) {{
+                    statsGrid.innerHTML = '';
+                    return;
+                }}
+
+                const totalUsage = data.reduce((sum, d) => sum + d.usage_count, 0);
+                const totalOrders = data.reduce((sum, d) => sum + d.unique_orders, 0);
+                const dexCount = [...new Set(data.map(d => d.dex_name))].length;
+
+                statsGrid.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-label">Usage ({{date}})</div>
+                        <div class="stat-value">${{totalUsage.toLocaleString()}}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Orders ({{date}})</div>
+                        <div class="stat-value">${{totalOrders.toLocaleString()}}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Active DEXes</div>
+                        <div class="stat-value">${{dexCount}}</div>
+                    </div>
+                `;
             }}
-
-            const totalUsage = data.reduce((sum, d) => sum + d.usage_count, 0);
-            const totalOrders = data.reduce((sum, d) => sum + d.unique_orders, 0);
-            const dexCount = data.length;
-
-            statsGrid.innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-label">Total Usage</div>
-                    <div class="stat-value">${{totalUsage.toLocaleString()}}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Unique Orders</div>
-                    <div class="stat-value">${{totalOrders.toLocaleString()}}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Active DEXes</div>
-                    <div class="stat-value">${{dexCount}}</div>
-                </div>
-            `;
         }}
 
         // Chart 1: 按天统计柱状图
@@ -554,7 +584,7 @@ def create_interactive_html(data, config):
             const chain = document.getElementById('chainSelect').value;
             const date = document.getElementById('dateSelect').value;
 
-            updateStats(chain);
+            updateStats(chain, date);
             createChart1(chain, date);
             createChart2(chain, date);
             createChart3(chain, date);
