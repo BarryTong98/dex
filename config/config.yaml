@@ -23,7 +23,7 @@ time:
 
 # Initialization mode
 init:
-  enabled: false  # Set to true to run initial 7-day backfill
+  enabled: true  # Set to true to run initial 7-day backfill
   days: 7  # Number of days to backfill when init is enabled
   auto_generate_report: true  # Automatically generate report after init
 
