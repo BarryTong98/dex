@@ -306,8 +306,11 @@ def load_data(conn, hourly_df, daily_df, total_df, run_date):
             DELETE FROM dex_usage_hourly
             WHERE chain_id = '{chain_id}' AND date = '{run_date}'
         """)
-        # Insert new data
-        conn.execute("INSERT INTO dex_usage_hourly SELECT * FROM hourly_df")
+        # Insert new data (specify columns to exclude created_at)
+        conn.execute("""
+            INSERT INTO dex_usage_hourly (chain_id, date, hour, dex_name, usage_count, total_weight, unique_orders)
+            SELECT chain_id, date, hour, dex_name, usage_count, total_weight, unique_orders FROM hourly_df
+        """)
         logger.info("✓ Loaded hourly data")
 
     # Load daily data
@@ -318,7 +321,11 @@ def load_data(conn, hourly_df, daily_df, total_df, run_date):
             DELETE FROM dex_usage_daily
             WHERE chain_id = '{chain_id}' AND date = '{run_date}'
         """)
-        conn.execute("INSERT INTO dex_usage_daily SELECT * FROM daily_df")
+        # Insert new data (specify columns to exclude created_at)
+        conn.execute("""
+            INSERT INTO dex_usage_daily (chain_id, date, dex_name, usage_count, total_weight, unique_orders, percentage)
+            SELECT chain_id, date, dex_name, usage_count, total_weight, unique_orders, percentage FROM daily_df
+        """)
         logger.info("✓ Loaded daily data")
 
     # Update total data (upsert)
@@ -491,6 +498,10 @@ def main():
         logger.info(f"Days processed: {init_days}")
         logger.info("=" * 80)
 
+        # Close database connection before generating report
+        conn.close()
+        logger.info("Database connection closed")
+
         # Automatically generate report if enabled
         if auto_generate_report:
             logger.info("\n" + "=" * 80)
@@ -531,8 +542,8 @@ def main():
         logger.info(f"ETL Process Complete - Total records processed: {total_records}")
         logger.info("=" * 80)
 
-    # Close connection
-    conn.close()
+        # Close connection
+        conn.close()
 
 
 if __name__ == "__main__":
